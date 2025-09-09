@@ -99,52 +99,73 @@ class UserController extends Controller
 
     public function cancel($id)
     {
-        $izin = Permissions::where('user_id', auth()->id())->findOrFail($id);
+        try{
+            $izin = Permissions::where('user_id', auth()->id())->findOrFail($id);
 
-        if ($izin->status !== 'submitted') {
-            return response()->json(['error' => 'Only permits that are still being submitted for can be canceled.'], 400);
+            if ($izin->status !== 'submitted') {
+                return response()->json(['error' => 'Only permits that are still being submitted for can be canceled.'], 400);
+            }
+
+            $izin->status = 'canceled';
+            $izin->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Permission has been successfully canceled',
+                'data'    => $izin
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to cancel permission!',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        $izin->status = 'canceled';
-        $izin->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Permission has been successfully canceled',
-            'data'    => $izin
-        ], 200);
     }
 
     public function destroy($id)
     {
-        $izin = Permissions::where('user_id', auth()->id())->findOrFail($id);
-        $izin->delete();
+        try{
+            $izin = Permissions::where('user_id', auth()->id())->findOrFail($id);
+            $izin->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Permission successfully deleted'
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Permission successfully deleted'
+            ], 200);
+        }catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete permission!',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function updatePassword(Request $request)
     {
-        $request->validate([
-            'old_password' => 'required|string',
-            'new_password' => 'required|string|min:6'
-        ]);
+        try{
+            $request->validate([
+                'old_password' => 'required|string',
+                'new_password' => 'required|string|min:6'
+            ]);
 
-        $user = auth()->user();
+            $user = auth()->user();
 
-        if (!Hash::check($request->old_password, $user->password)) {
-            return response()->json(['error' => 'Old password is incorrect'], 400);
-        }
+            if (!Hash::check($request->old_password, $user->password)) {
+                return response()->json(['error' => 'Old password is incorrect'], 400);
+            }
 
-        $user->password = Hash::make($request->new_password);
-        $user->save();
+            $user->password = Hash::make($request->new_password);
+            $user->save();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Password has been successfully updated'
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Password has been successfully updated'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update password!',
+                'error' => $e->getMessage(),
+            ], 500);
+        }       
     }
 }
